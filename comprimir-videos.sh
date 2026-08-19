@@ -20,7 +20,10 @@
 
 set -euo pipefail
 
-ALTA="../_Assets/Videos-Alta"
+# Os masters ficam no Drive, FORA do repositório (881 MB não vão para o git).
+# O repositório mora em ~/Projetos, então o caminho não pode ser relativo a ele.
+# Dá para apontar outro lugar com:  ALTA=/outro/caminho ./comprimir-videos.sh
+ALTA="${ALTA:-$HOME/Library/CloudStorage/GoogleDrive-bernardo@wt.ag/Meu Drive/Credenciais WT.AG/_Assets/Videos-Alta}"
 DEST="assets/video"
 CONFERIR=false
 [[ "${1:-}" == "--conferir" ]] && CONFERIR=true
@@ -40,17 +43,51 @@ if [[ -z "$FF" ]] || ! "$FF" -version >/dev/null 2>&1; then
   exit 1
 fi
 
-[[ -d "$ALTA" ]] || { echo "não achei $ALTA — os masters precisam estar lá"; exit 1; }
+if [[ ! -d "$ALTA" ]]; then
+  echo "não achei a pasta dos masters:"
+  echo "    $ALTA"
+  echo "Se o Drive estiver em outro caminho, aponte com:"
+  echo "    ALTA=/caminho/para/Videos-Alta ./comprimir-videos.sh"
+  exit 1
+fi
+
+# ── por que existe esta checagem ────────────────────────────────────────────
+# Os masters vivem no Google Drive, e o Drive pode entregar leitura PARCIAL de um
+# arquivo que ele ainda não materializou: os primeiros 8 MiB vêm certos e o resto
+# vem corrompido. Foi exatamente o que aconteceu com o case-magalu.mp4 — 873
+# erros de NAL, 115 frames faltando — e o vídeo publicado pulava trecho e
+# congelava. Nada acusou na hora, porque o ffmpeg contorna erro de origem em
+# silêncio e a duração continuou batendo.
+#
+# Agora, antes de comprimir, cada master é decodificado por inteiro. Se acusar
+# erro, o script PARA em vez de gerar um arquivo quebrado.
+conferir_master () {
+  local f="$1"
+  cat "$f" > /dev/null                       # força o Drive a materializar tudo
+  local e
+  e=$("$FF" -nostdin -v error -i "$f" -f null - 2>&1 | wc -l | tr -d ' ')
+  if [[ "$e" != "0" ]]; then
+    echo
+    echo "  !! $(basename "$f"): $e erros de decodificação no MASTER."
+    echo "     Comprimir daqui gera vídeo que pula e congela. Duas causas comuns:"
+    echo "     · o Drive entregou leitura parcial — apague a cópia e copie de novo"
+    echo "     · o master é mesmo defeituoso — procure o original em _Assets/Vídeos/"
+    return 1
+  fi
+  return 0
+}
 
 # só estes entram na compressão; o resto fica como está
 ALVOS=(case-magalu case-central-do-corre case-odontoprev
        case-pulando-o-bloco case-sicredi showreel-wtag)
 BV=1500k
+FALHAS=0
 
 for nome in "${ALVOS[@]}"; do
   orig="$ALTA/$nome.mp4"; saida="$DEST/$nome.mp4"
   [[ -f "$orig" ]] || { echo "  $nome — sem master, pulando"; continue; }
   antes=$(stat -f%z "$orig")
+  if ! conferir_master "$orig"; then FALHAS=$((FALHAS+1)); continue; fi
   if $CONFERIR; then
     printf '  %-26s %7.1f MB → alvo %s\n' "$nome" "$(bc -l <<< "$antes/1048576")" "$BV"
     continue
@@ -67,9 +104,17 @@ for nome in "${ALVOS[@]}"; do
     -c:a aac -b:a 128k -ac 2 \
     -movflags +faststart "$saida"
   depois=$(stat -f%z "$saida")
-  printf '  %-26s %7.1f MB → %6.1f MB  (%.0f%% menor)\n' "$nome" \
+  # Frame count é o que pega pulo e congelamento; duração sozinha não pega,
+  # porque um vídeo com frames faltando mantém a duração.
+  fm=$("$FF" -nostdin -i "$orig"  -map 0:v:0 -f null - 2>&1 | grep -oE 'frame= *[0-9]+' | tail -1 | grep -oE '[0-9]+')
+  fs=$("$FF" -nostdin -i "$saida" -map 0:v:0 -f null - 2>&1 | grep -oE 'frame= *[0-9]+' | tail -1 | grep -oE '[0-9]+')
+  if [[ "$fm" != "$fs" ]]; then
+    echo "  !! $nome: master tem $fm frames, saída tem $fs. Vai pular na reprodução."
+    FALHAS=$((FALHAS+1))
+  fi
+  printf '  %-26s %7.1f MB → %6.1f MB  (%.0f%% menor) · %s frames\n' "$nome" \
     "$(bc -l <<< "$antes/1048576")" "$(bc -l <<< "$depois/1048576")" \
-    "$(bc -l <<< "100*(1-$depois/$antes)")"
+    "$(bc -l <<< "100*(1-$depois/$antes)")" "$fs"
 done
 
 if ! $CONFERIR; then
@@ -78,4 +123,10 @@ if ! $CONFERIR; then
   find "$DEST" -name '*.mp4' -size +100M -print -quit | grep -q . \
     && find "$DEST" -name '*.mp4' -size +100M -exec ls -lh {} \; \
     || echo "  nenhum"
+  echo
+  if [[ "$FALHAS" -gt 0 ]]; then
+    echo "$FALHAS problema(s). NÃO publique sem resolver."
+    exit 1
+  fi
+  echo "Tudo conferido: masters limpos e frame count batendo em todos."
 fi

@@ -104,4 +104,21 @@ qualquer pasta que comece com `_` (como `_originais/` dentro de
 - **Números do Odontoprev** — três dos seis espaços mostram `(nº)`.
 - **URLs de LinkedIn** do time. O selo só aparece em quem tem URL declarada.
 - **Foto do slide 11**, marcada `(Foto a trocar)`.
-- Reexportar o **master do Magalu**: tem 873 erros de decodificação de origem.
+## Uma armadilha que já custou um vídeo quebrado
+
+Os masters ficam no Google Drive, e **o Drive pode entregar leitura parcial** de
+um arquivo que ainda não materializou por completo: os primeiros 8 MiB vêm certos
+e o resto vem corrompido. Aconteceu com o `case-magalu.mp4` — o vídeo publicado
+pulava trecho e congelava, e nada acusou na hora, porque o ffmpeg contorna erro
+de origem em silêncio e a duração continuou batendo.
+
+O `comprimir-videos.sh` agora se protege disso: lê cada master por inteiro antes
+(forçando a materialização), decodifica e **para** se houver erro, e no fim
+compara o frame count da saída com o do master. Duração sozinha não serve de
+conferência — um vídeo com frames faltando mantém a duração.
+
+Se for copiar arquivo de dentro do Drive à mão, **confira por hash**:
+
+```bash
+shasum -a 1 origem.mp4 destino.mp4
+```
