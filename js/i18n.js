@@ -30,8 +30,15 @@
 (function () {
   'use strict';
 
+  /* data-rl-texto entra nesta lista por um motivo que quase passou batido: a
+     animação de roleta do deck CACHEIA o texto do elemento em data-rl-texto na
+     primeira preparação do slide, e ao entrar no slide reescreve o elemento a
+     partir desse cache. Traduzir só o innerHTML fazia a roleta devolver o
+     português na entrada — e o bug não aparecia nos meus testes, porque eu forçava
+     as classes sem disparar a animação. Vale para todo o lettering
+     (.escada .ln), para o .cta__main e para os divisores (.rl-alvo). */
   var ATTRS = ['data-titulo', 'data-legenda', 'data-texto', 'title',
-               'aria-label', 'alt', 'placeholder'];
+               'aria-label', 'alt', 'placeholder', 'data-rl-texto'];
   var VARS  = [['data-en-x', '--x'], ['data-en-fs', '--fs'], ['data-en-cap', '--cap']];
 
   var raiz = document.getElementById('viewport') || document.body;
@@ -50,6 +57,23 @@
     if (!el.hasAttribute(chave)) el.setAttribute(chave, valor);
   }
 
+  /* --x, --fs e --cap da linha traduzida. O português tem valores calculados na
+     métrica da fonte; a palavra em inglês tem outra largura, então o mesmo --x
+     deixa de centrar e o mesmo --fs deixa de encostar na margem. */
+  function aplicarVars(el, para) {
+    for (var v = 0; v < VARS.length; v++) {
+      var attr = VARS[v][0], cssVar = VARS[v][1];
+      if (!el.hasAttribute(attr)) continue;
+      var guardaV = 'data-pt-' + cssVar.replace('--', '');
+      if (para === 'en') {
+        guardar(el, guardaV, el.style.getPropertyValue(cssVar));
+        el.style.setProperty(cssVar, el.getAttribute(attr));
+      } else if (el.hasAttribute(guardaV)) {
+        el.style.setProperty(cssVar, el.getAttribute(guardaV));
+      }
+    }
+  }
+
   function aplicar(para) {
     var els = raiz.querySelectorAll('*');
     for (var i = 0; i < els.length; i++) {
@@ -58,6 +82,21 @@
 
       /* ── conteúdo ── */
       if (para === 'en') {
+        /* data-en-txt no próprio elemento vence o dicionário. Existe porque o
+           dicionário é indexado pelo texto em português e uma palavra pode pedir
+           traduções diferentes em lugares diferentes: "MARCAS" é NEED no slide
+           "AS MARCAS PRECISAM SER" e BRANDS no "JUNTO COM MARCAS QUE ACREDITAM".
+           Sem o override, uma das duas sairia errada. */
+        if (el.hasAttribute('data-en-txt')) {
+          guardar(el, 'data-pt', el.innerHTML);
+          el.innerHTML = el.getAttribute('data-en-txt');
+          if (el.hasAttribute('data-rl-texto')) {
+            guardar(el, 'data-pt-rl-texto', el.getAttribute('data-rl-texto'));
+            el.setAttribute('data-rl-texto', el.getAttribute('data-en-txt'));
+          }
+          aplicarVars(el, para);
+          continue;
+        }
         var alvo = traduzir(el.innerHTML);
         if (alvo !== null) {
           guardar(el, 'data-pt', el.innerHTML);
@@ -89,17 +128,7 @@
       }
 
       /* ── geometria do lettering ── */
-      for (var v = 0; v < VARS.length; v++) {
-        var attr = VARS[v][0], cssVar = VARS[v][1];
-        if (!el.hasAttribute(attr)) continue;
-        var guardaV = 'data-pt-' + cssVar.replace('--', '');
-        if (para === 'en') {
-          guardar(el, guardaV, el.style.getPropertyValue(cssVar));
-          el.style.setProperty(cssVar, el.getAttribute(attr));
-        } else if (el.hasAttribute(guardaV)) {
-          el.style.setProperty(cssVar, el.getAttribute(guardaV));
-        }
-      }
+      aplicarVars(el, para);
     }
 
     document.documentElement.lang = (para === 'en') ? 'en' : 'pt-BR';
