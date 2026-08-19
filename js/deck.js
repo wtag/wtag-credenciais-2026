@@ -542,6 +542,7 @@
 
   /* ------------------------------------------------------------- navegação */
   function irPara(i, dir) {
+    montarImagens(i);
     i = Math.max(0, Math.min(slides.length - 1, i));
     if (i === atual && slides[atual].classList.contains('is-active')) return;
     if (animando) { filaNav = { i: i, dir: dir }; return; }
@@ -713,11 +714,23 @@
     var slide = logo.closest('.slide');
     var img = logo.querySelector('img');
     if (!slide || !img) return;
-    var chave = img.getAttribute('src').split('/').pop().replace(/\.\w+$/, '');
+    /* data-lazy antes de src: com a montagem por janela o caminho do arquivo
+       vive em data-lazy, e o src só existe enquanto o slide está montado. Ler só
+       o src dava null.split() no arranque e derrubava o deck inteiro. */
+    var caminho = img.getAttribute('data-lazy') || img.getAttribute('src') || '';
+    var chave = caminho.split('/').pop().replace(/\.\w+$/, '');
     var card = slide.querySelector('.espia[data-espia="' + chave + '"]');
     if (!card) return;
 
+    function montarEspia() {
+      [].forEach.call(card.querySelectorAll('img[data-lazy]'), function (img) {
+        var alvo = img.getAttribute('data-lazy');
+        if (img.getAttribute('src') !== alvo) img.setAttribute('src', alvo);
+      });
+    }
+
     function abrir() {
+      montarEspia();
       slide.classList.add('is-espiando');
       logo.classList.add('is-alvo');
       slide.querySelectorAll('.espia.is-vendo').forEach(function (o) {
@@ -729,6 +742,14 @@
       slide.classList.remove('is-espiando');
       logo.classList.remove('is-alvo');
       card.classList.remove('is-vendo');
+      /* Solta as imagens do card ao sair. Passar por todos os quatro logos
+         deixava os quatro montados: 158 MB, contra 67 do slide sem hover. O
+         arquivo fica no cache do navegador, então voltar ao mesmo logo é
+         instantâneo — o que se libera é o bitmap decodificado, que é o recurso
+         escasso no iPhone. */
+      [].forEach.call(card.querySelectorAll('img[data-lazy]'), function (img) {
+        img.removeAttribute('src');
+      });
     }
     logo.addEventListener('mouseenter', abrir);
     logo.addEventListener('mouseleave', fechar);
@@ -1119,22 +1140,50 @@
   document.querySelector('.btn-sum').addEventListener('click', function (e) { e.stopPropagation(); abrirSumario(); });
   sumario.querySelector('.sum__fechar').addEventListener('click', function (e) { e.stopPropagation(); fecharSumario(); });
 
+  /* ─────────────────────────────────────────────────────────────────────────
+     MONTAGEM DE IMAGEM POR JANELA
+     As 26 seções coexistem no DOM, e com todas as imagens carregadas o Safari no
+     iPhone morria com "um problema ocorreu repetidamente": são 356 MB de memória
+     DECODIFICADA (largura × altura × 4 bytes), contra ~13 MB em disco — JPEG
+     comprime bem e decodifica para RGBA cru. O limite por aba no iPhone fica
+     entre 200 e 300 MB.
+
+     Aqui só o slide atual e os vizinhos imediatos têm src. Quem sai da janela
+     perde o src e o navegador libera o bitmap. A capa nunca é desmontada, para
+     a volta ao início não piscar.
+
+     Janela de ±1 e não ±2 de propósito: o slide de case é o mais pesado (fundo
+     de 14 MB decodificados + hero de 8,5 + miniaturas), e três deles montados
+     já somam perto de 80 MB. Com ±2 daria o dobro. */
+  var JANELA = 1;
+
+  function montarImagens(i) {
+    var de = Math.max(0, i - JANELA), ate = Math.min(slides.length - 1, i + JANELA);
+    slides.forEach(function (s, k) {
+      var dentro = (k >= de && k <= ate) || k === 0;
+      /* :not(.espia *) — os cards de prévia só aparecem no hover de um logo, mas
+         cada um traz fundo de campanha, selo e imagem principal: quatro cards
+         somavam ~90 MB decodificados no slide de marcas parceiras, mais que o
+         resto do deck. Eles são montados no próprio hover, em montarEspia(). */
+      [].forEach.call(s.querySelectorAll('img[data-lazy]:not(.espia img)'), function (img) {
+        var alvo = img.getAttribute('data-lazy');
+        if (dentro) {
+          if (img.getAttribute('src') !== alvo) img.setAttribute('src', alvo);
+        } else if (img.hasAttribute('src')) {
+          img.removeAttribute('src');
+        }
+      });
+    });
+  }
+
   /* -------------------------------------------------------------- arranque */
   /* O sumário é gerado a partir dos data-titulo, e o i18n troca esses títulos.
      Sem remontar, o sumário fica em português com o deck em inglês. Os nomes dos
      atos vêm do objeto ATOS, que também é traduzido pelo dicionário quando o
      título passa pelo elemento — por isso a remontagem lê tudo de novo do DOM. */
-  window.DECK = {
-    remontarSumario: function () {
-      var cols = sumario.querySelector('.sum__cols');
-      if (cols) cols.innerHTML = '';
-      montarSumario();
-      atualizarUI();
-    }
-  };
-
   montarUI();
   montarSumario();
+  montarImagens(inicial >= 0 ? inicial : 0);
 
   var inicial = 0;
   var m = /#slide-(\d+)/.exec(location.hash);
@@ -1168,6 +1217,18 @@
   }
 
   // expõe para depuração
-  window.DECK = { irPara: irPara, proximo: proximo, anterior: anterior,
-                  total: slides.length, get atual() { return atual; } };
+  /* Um único window.DECK. Havia dois: o segundo sobrescrevia o primeiro e
+     levava embora o remontarSumario, então o sumário ficava em português com o
+     deck em inglês — sem erro nenhum, porque a chamada do i18n é opcional. */
+  window.DECK = {
+    irPara: irPara, proximo: proximo, anterior: anterior,
+    total: slides.length,
+    get atual() { return atual; },
+    remontarSumario: function () {
+      var cols = sumario.querySelector('.sum__cols');
+      if (cols) cols.innerHTML = '';
+      montarSumario();
+      atualizarUI();
+    }
+  };
 })();
