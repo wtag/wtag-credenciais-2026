@@ -86,7 +86,6 @@ window.DIC_EN = {
 /* ── 11 · metodologia ────────────────────────────────────────────────── */
 'Metodologia Social Branding': 'Social Branding Methodology',
 'Sessão de brainstorm com post-its': 'Brainstorming session with sticky notes',
-'(Foto a trocar)': '(Photo to be replaced)',
 'framework': 'framework',
 
 /* ── 12 · framework em 8 etapas ──────────────────────────────────────── */
@@ -345,6 +344,20 @@ window.DIC_EN = {
 'Awareness<br>para aproximação com<br>públicos mais jovens': 'Awareness<br>to connect with<br>younger audiences',
 'Sumário <kbd>espaço</kbd>': 'Contents <kbd>space</kbd>',
 '<kbd>Enter</kbd> ir para a tela': '<kbd>Enter</kbd> go to slide',
+
+
+/* ── mais texto com <br> por dentro. A varredura anterior usou heurística de
+   idioma (acento ou palavra da lista) e deixou passar frase sem acento como
+   "PORQUE EXISTIMOS?" e "TRANSFORMANDO MARCAS...". Esta leva foi achada
+   varrendo TODO elemento com texto solto + filhos, sem adivinhar idioma. */
+'profissionais<br>integrados': 'integrated<br>professionals',
+'Transformamos marcas<br>em protagonistas<br>da cultura digital': 'We turn brands into<br>protagonists of<br>digital culture',
+'TRANSFORMANDO MARCAS<br>EM PROTAGONISTAS DA<br>CULTURA DIGITAL': 'TURNING BRANDS INTO<br>PROTAGONISTS OF<br>DIGITAL CULTURE',
+'PORQUE<br>EXISTIMOS?': 'WHY DO WE<br>EXIST?',
+'Coleta de<br>dados em redes<br>sociais': 'Collecting<br>social media<br>data',
+'Melhorar a Vida<br>das Pessoas': 'Improve People’s<br>Lives',
+'Gerar Desejo e<br>Pertencimento': 'Drive Desire and<br>Belonging',
+'Stop<br>motion': 'Stop<br>motion',
 
 /* ── nomes dos atos, usados no HUD e no sumário ──────────────────────────── */
 'Transição': 'Transition',
