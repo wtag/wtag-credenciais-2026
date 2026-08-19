@@ -22,6 +22,8 @@
      fica no HTML, então voltar é remover um atributo. */
   var slides   = [].slice.call(document.querySelectorAll('.slide:not([data-oculto])'));
 
+  /* Nomes dos atos. Vivem aqui e não no DOM, então o i18n não os alcança
+     percorrendo elementos — a tradução é consultada na hora de escrever. */
   var ATOS = {
     we:        'Grupo WE',
     trans:     'Transição',
@@ -29,6 +31,11 @@
     cases:     'Cases',
     estrutura: 'Estrutura'
   };
+  function nomeAto(k) {
+    var pt = ATOS[k] || k;
+    if (document.documentElement.lang !== 'en') return pt;
+    return (window.DIC_EN && window.DIC_EN[pt]) || pt;
+  }
 
   var atual = 0, animando = false, filaNav = null, idleTimer = null;
 
@@ -112,12 +119,19 @@
 
     var t0 = null;
     function fmt(v) {
+      /* O separador acompanha o idioma: em português 50.143 e 4,7; em inglês
+         50,143 e 4.7. Estava fixo em pt-BR, o que ficaria errado com o deck em
+         inglês — e "50.143" lido por um estrangeiro é cinquenta, não cinquenta
+         mil. Os milhares só aparecem em quem pede data-count-sep. */
+      var en = document.documentElement.lang === 'en';
+      var milhar = en ? ',' : '.';
+      var decimal = en ? '.' : ',';
       var s = dec > 0 ? v.toFixed(dec) : String(Math.round(v));
-      if (dec > 0) s = s.replace('.', ',');
+      if (dec > 0) s = s.replace('.', decimal);
       if (sep) {
-        var p = s.split(',');
-        p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        s = p.join(',');
+        var p = s.split(decimal);
+        p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, milhar);
+        s = p.join(decimal);
       }
       return s;
     }
@@ -588,7 +602,7 @@
       if (ato !== atoAnterior) {
         grupoAtual = document.createElement('div');
         grupoAtual.className = 'hud__grp';
-        grupoAtual.title = ATOS[ato] || ato;
+        grupoAtual.title = nomeAto(ato);
         cont.appendChild(grupoAtual);
         atoAnterior = ato;
       }
@@ -605,7 +619,7 @@
   function atualizarUI() {
     var s = slides[atual];
     hudN.textContent = pad(atual + 1) + ' / ' + pad(slides.length);
-    hudAto.textContent = ATOS[s.dataset.ato] || '';
+    hudAto.textContent = nomeAto(s.dataset.ato) || '';
     dots.forEach(function (d, i) {
       d.classList.toggle('is-on', i === atual);
       d.classList.toggle('is-past', i < atual);
@@ -660,7 +674,7 @@
       var div = document.createElement('div');
       div.className = 'sum__ato';
       var h = document.createElement('h4');
-      h.textContent = ATOS[g.ato] || g.ato;
+      h.textContent = nomeAto(g.ato);
       div.appendChild(h);
       var ol = document.createElement('ol');
       g.itens.forEach(function (it) {
@@ -1106,6 +1120,19 @@
   sumario.querySelector('.sum__fechar').addEventListener('click', function (e) { e.stopPropagation(); fecharSumario(); });
 
   /* -------------------------------------------------------------- arranque */
+  /* O sumário é gerado a partir dos data-titulo, e o i18n troca esses títulos.
+     Sem remontar, o sumário fica em português com o deck em inglês. Os nomes dos
+     atos vêm do objeto ATOS, que também é traduzido pelo dicionário quando o
+     título passa pelo elemento — por isso a remontagem lê tudo de novo do DOM. */
+  window.DECK = {
+    remontarSumario: function () {
+      var cols = sumario.querySelector('.sum__cols');
+      if (cols) cols.innerHTML = '';
+      montarSumario();
+      atualizarUI();
+    }
+  };
+
   montarUI();
   montarSumario();
 
