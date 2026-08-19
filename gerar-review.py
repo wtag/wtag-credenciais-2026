@@ -49,7 +49,8 @@ def conferir_cases(html):
     cinco cases têm a mesma anatomia, e é isso que dá para conferir: se um tem
     3 miniaturas e outro tem 0, alguma coisa se perdeu no caminho.
     """
-    cases = re.findall(r'<section class="slide case[^"]*".*?</section>', html, re.S)
+    cases = [b for b in re.findall(r'<section [^>]*class="slide case[^"]*".*?</section>',
+                                   html, re.S) if 'data-oculto' not in b[:400]]
     if not cases:
         return
     linhas, alertas = [], []
@@ -113,7 +114,7 @@ def main():
     n_var = 0
     if '--variantes' in sys.argv and os.path.exists(VARIANTES):
         frag = io.open(VARIANTES, encoding='utf-8').read()
-        n_var = len(re.findall(r'<section class="slide', frag))
+        n_var = len(re.findall(r'<section [^>]*class="slide', frag))
         if n_var:
             marca = '</div><!-- /#stage -->'
             if marca not in html:
@@ -127,7 +128,7 @@ def main():
 
     io.open(DESTINO, 'w', encoding='utf-8').write(html)
 
-    n = len(re.findall(r'<section class="slide', html))
+    n = len(re.findall(r'<section [^>]*class="slide', html))
     extra = ' (%d do deck + %d variantes)' % (n - n_var, n_var) if n_var else ''
     print('index_review.html gerado · %d slides%s · assets em v=%s' % (n, extra, versao))
 

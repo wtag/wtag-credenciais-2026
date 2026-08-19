@@ -26,7 +26,7 @@
 
   var viewport = document.getElementById('viewport');
   var stage    = document.getElementById('stage');
-  var slides   = [].slice.call(document.querySelectorAll('.slide'));
+  var slides   = [].slice.call(document.querySelectorAll('.slide:not([data-oculto])'));
 
   if (!viewport || !stage || !window.DECK) {
     console.warn('[revisão] deck não encontrado — camada de revisão desligada.');

@@ -16,7 +16,11 @@
   var lb       = document.getElementById('lb');
   var txtpanel = document.getElementById('txtpanel');
   var loader   = document.getElementById('loader');
-  var slides   = [].slice.call(document.querySelectorAll('.slide'));
+  /* `:not([data-oculto])` é o que tira um slide da apresentação sem apagá-lo.
+     O slide dos clientes do Grupo WE saiu por decisão de conteúdo — quem abre a
+     apresentação são as marcas parceiras da WT.AG, no slide próprio. O markup
+     fica no HTML, então voltar é remover um atributo. */
+  var slides   = [].slice.call(document.querySelectorAll('.slide:not([data-oculto])'));
 
   var ATOS = {
     we:        'Grupo WE',
@@ -931,12 +935,22 @@
       if (sv.paused) { sv.play(); } else { sv.pause(); sv.parentNode.querySelector('.play-btn').classList.remove('is-hidden'); }
       return;
     }
-    /* atalho interno: qualquer elemento com data-ir-slide="N" pula para o slide N
-       (1-based, como o contador do rodapé). Usado pelos logos do slide 15 que
-       têm case no deck. */
-    var atalho = e.target.closest('[data-ir-slide]');
+    /* Atalho interno. Era data-ir-slide="N", com N sendo a posição na lista — e
+       isso quebrou no instante em que um slide saiu da apresentação: todos os
+       índices seguintes deslocaram e os cinco links passaram a cair um slide
+       antes, sem erro nenhum. Agora aponta para o id da seção, que não se move.
+       Referenciar pelo data-titulo não serviria: os títulos são traduzidos.
+       O ramo numérico fica como rede, para markup antigo. */
+    var atalho = e.target.closest('[data-ir],[data-ir-slide]');
     if (atalho) {
       e.stopPropagation();
+      var sid = atalho.dataset.ir;
+      if (sid) {
+        var alvoEl = document.getElementById(sid);
+        var i = alvoEl ? slides.indexOf(alvoEl) : -1;
+        if (i >= 0) irPara(i);
+        return;
+      }
       var n = parseInt(atalho.dataset.irSlide, 10);
       if (n >= 1 && n <= slides.length) irPara(n - 1);
       return;
