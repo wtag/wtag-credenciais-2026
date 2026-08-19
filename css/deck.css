@@ -1444,6 +1444,9 @@ a.reperc__it:hover .reperc__ph{border-color:var(--acento,var(--laranja-wt));
   font-size:19px;letter-spacing:.02em;text-transform:uppercase}
 .gire__cx span{font-family:var(--font-sans),system-ui,sans-serif;font-weight:400;
   font-size:14px;line-height:1.5;color:var(--creme-55,rgba(247,249,234,.55))}
+.gire__btn{margin-top:6px;padding:11px 20px;border-radius:999px;text-decoration:none;
+  font-family:var(--font-sans);font-weight:600;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--preto-wt);background:var(--laranja-wt)}
 .gire__logo{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
   width:86px;height:auto;opacity:.5}
 @media (prefers-reduced-motion:reduce){ .gire__icone{animation:none} }
