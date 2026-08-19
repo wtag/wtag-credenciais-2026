@@ -1372,6 +1372,63 @@ a.reperc__it:hover .reperc__ph{border-color:var(--acento,var(--laranja-wt));
 #txtpanel .tp__close svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.6}
 
 /* --------------------------------------------------------------- capa/loader */
+/* ══════════════════════════════════════════════════════════════════════════
+   RETRATO NO CELULAR — "gire o aparelho"
+   O palco é 16:9 fixo e a escala é min(largura/1920, altura/1080). Num iPhone em
+   retrato (390×844) isso dá 0,203: o slide fica com 390×219, uma tira de 26% da
+   altura no meio do fundo. Em paisagem a mesma tela dá 693×390 e funciona.
+   Fica ACIMA do loader (z-index 95) para aparecer antes de qualquer coisa.
+   ═══════════════════════════════════════════════════════════════════════════ */
+#gire{position:absolute;inset:0;z-index:95;display:none;
+  background:var(--preto-wt,#0a0a0a);color:var(--creme-wt,#F7F9EA);
+  place-items:center;text-align:center;padding:32px}
+/* Três condições, todas necessárias:
+     orientation:portrait — só em retrato
+     max-width:700px     — poupa tablet, que em retrato dá 820×461 e é usável
+     pointer:coarse      — só aparelho de toque; janela estreita no desktop não vê */
+@media (orientation:portrait) and (max-width:700px) and (pointer:coarse){
+  #gire{display:grid}
+}
+.gire__cx{display:flex;flex-direction:column;align-items:center;gap:18px;max-width:300px}
+.gire__icone{width:56px;height:56px;fill:none;stroke:var(--laranja-wt,#FF4900);
+  stroke-width:3;stroke-linecap:round;stroke-linejoin:round;
+  animation:gireGira 2.6s ease-in-out infinite}
+@keyframes gireGira{
+  0%,55%{transform:rotate(0)} 75%,100%{transform:rotate(90deg)}}
+.gire__cx strong{font-family:var(--font-sans),system-ui,sans-serif;font-weight:600;
+  font-size:19px;letter-spacing:.02em;text-transform:uppercase}
+.gire__cx span{font-family:var(--font-sans),system-ui,sans-serif;font-weight:400;
+  font-size:14px;line-height:1.5;color:var(--creme-55,rgba(247,249,234,.55))}
+.gire__logo{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
+  width:86px;height:auto;opacity:.5}
+@media (prefers-reduced-motion:reduce){ .gire__icone{animation:none} }
+
+/* ── alvos de toque ─────────────────────────────────────────────────────────
+   Os pontinhos do HUD têm 9px, o que serve para mouse e não para dedo. Em
+   aparelho de toque a área clicável cresce por pseudo-elemento, sem mudar o
+   desenho: o ponto continua com 9px, a área de acerto passa a 34px. */
+@media (pointer:coarse){
+  /* O HUD vive FORA do palco, então aqui 34px são 34px de tela. */
+  .dot{position:relative}
+  .dot::after{content:"";position:absolute;left:50%;top:50%;
+    transform:translate(-50%,-50%);width:34px;height:34px}
+  #ui .hud{gap:14px}
+
+  /* Dentro do palco a história é outra: tudo é multiplicado por --escala, que no
+     celular em paisagem fica em 0,36. Um alvo de 44px viraria 16px de tela. Por
+     isso o tamanho é DIVIDIDO pela escala — 44px/0,36 = 122px de palco, que dão
+     os 44px reais que o dedo precisa. A --escala é publicada no #stage pelo
+     deck.js e os slides herdam.
+     Sem isto, o botão "＋ Texto completo" media 54×7 px de tela e era inacertável
+     — e é justamente ele que abre o painel de texto, o único lugar onde o texto
+     do case é legível no celular (o painel fica fora do palco, com 18px reais). */
+  .case__mais,.pilula-nav{position:relative}
+  .case__mais::after,.pilula-nav::after{content:"";position:absolute;
+    left:50%;top:50%;transform:translate(-50%,-50%);
+    width:calc(100% + 44px / var(--escala,1));
+    height:calc(44px / var(--escala,1))}
+}
+
 #loader{position:absolute;inset:0;z-index:90;background:#000;display:grid;place-items:center;
   transition:opacity 620ms ease,visibility 0s linear 620ms}
 #loader.is-done{opacity:0;visibility:hidden}

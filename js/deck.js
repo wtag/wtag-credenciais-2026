@@ -34,6 +34,20 @@
     stage.style.setProperty('--escala', s);
   }
   window.addEventListener('resize', escalar);
+  /* No celular o `resize` não é suficiente. Girar o aparelho dispara
+     orientationchange e o innerHeight só estabiliza alguns frames depois, então
+     medir na hora dá a escala da orientação ANTIGA. E no iOS a barra de endereço
+     que recolhe muda a altura sem disparar resize — quem acusa isso é o
+     visualViewport. Sem estes dois, girar o aparelho deixava o palco com a
+     escala errada até tocar na tela. */
+  window.addEventListener('orientationchange', function () {
+    escalar();
+    setTimeout(escalar, 120);
+    setTimeout(escalar, 400);
+  });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', escalar);
+  }
   escalar();
 
   /* --------------------------------------------- preparação da coreografia */

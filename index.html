@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WT.AG — Credenciais 2026</title>
 <meta name="description" content="Credenciais WT.AG 2026 — Social First Agency. Apresentação de slides.">
-<link rel="stylesheet" href="css/deck.css?v=108">
+<link rel="stylesheet" href="css/deck.css?v=110">
 </head>
 <body>
 
@@ -1336,10 +1336,30 @@
   </button>
 </div>
 
+<!-- Retrato no celular: o palco é 16:9 fixo, então numa tela de 390×844 a
+     escala vira 0,203 e o slide fica com 390×219 — uma tira de 26% da altura
+     flutuando no fundo. Não é "não abrir", é abrir ilegível. Em paisagem a mesma
+     tela dá 693×390 e funciona. Daí este aviso, em CSS puro para responder à
+     rotação na hora, sem depender de JS.
+     A regra só vale em aparelho de toque e tela estreita: tablet em retrato dá
+     820×461, que é usável, e janela estreita no desktop não deve ver isto. -->
+<div id="gire" aria-hidden="true">
+  <div class="gire__cx">
+    <svg class="gire__icone" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="20" y="4" width="24" height="40" rx="4"/>
+      <path d="M12 52a24 24 0 0 0 40 0"/>
+      <path d="M52 44v8h-8"/>
+    </svg>
+    <strong>Gire o aparelho</strong>
+    <span>Esta apresentação foi feita para a tela na horizontal.</span>
+  </div>
+  <img class="gire__logo" src="assets/logo/wtag-branco.svg" alt="WT.AG">
+</div>
+
 <div id="loader"><span class="ld">WT.AG · Credenciais 2026</span></div>
 
 </div><!-- /#viewport -->
 
-<script src="js/deck.js?v=108"></script>
+<script src="js/deck.js?v=110"></script>
 </body>
 </html>

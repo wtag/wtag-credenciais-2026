@@ -104,6 +104,38 @@ qualquer pasta que comece com `_` (como `_originais/` dentro de
 - **Números do Odontoprev** — três dos seis espaços mostram `(nº)`.
 - **URLs de LinkedIn** do time. O selo só aparece em quem tem URL declarada.
 - **Foto do slide 11**, marcada `(Foto a trocar)`.
+## No celular
+
+O palco é 16:9 fixo, escalado por `min(largura/1920, altura/1080)`. Num iPhone em
+**retrato** isso dá escala 0,203: o slide fica com 390×219, uma tira de 26% da
+altura no meio do fundo — abre, mas ilegível. Por isso, em aparelho de toque com
+tela estreita e em retrato, aparece um aviso pedindo para girar.
+
+Em **paisagem** funciona: a mesma tela dá 693×390, usando a altura toda.
+
+Os alvos de toque precisaram de dois tratamentos diferentes, porque metade da
+interface vive fora do palco e metade dentro:
+
+| onde | contexto | como o alvo é calculado |
+|---|---|---|
+| pontinhos do HUD, `#ui` | fora do palco, sem escala | 34px direto |
+| `＋ Texto completo`, pílula `Clientes` | dentro do palco, escalado | `calc(44px / var(--escala))` |
+
+Dentro do palco, um alvo de 44px viraria 16px de tela. Dividir pela `--escala`
+(que o `deck.js` publica no `#stage`) devolve os 44px reais. O botão de texto
+completo tem 54×7 px de desenho e 98×44 px de área de acerto.
+
+### O limite que continua
+
+Em paisagem no celular, a tipografia grande, as imagens e os vídeos ficam bem. O
+**texto corrido dos cases não fica**: 13,5px × 0,36 = 4,9px de tela. Os rótulos
+de KPI ficam em 3,8px.
+
+O escape existe e é o botão `＋ Texto completo`: o painel que ele abre fica fora
+do palco, com 18px reais, e é legível. Foi por isso que o alvo de toque dele virou
+prioridade. Leitura confortável dos cases mesmo, porém, pede tablet em paisagem
+(escala 0,615) ou desktop.
+
 ## Uma armadilha que já custou um vídeo quebrado
 
 Os masters ficam no Google Drive, e **o Drive pode entregar leitura parcial** de
