@@ -1176,6 +1176,19 @@
     });
   }
 
+  /* Tela cheia: o iOS Safari só aceita requestFullscreen em <video>, não em
+     elemento qualquer. Deixar o botão à vista ali é oferecer uma ação que não
+     acontece — pior que não ter botão. Onde a API não existe, ele sai de cena;
+     no Android Chrome, que suporta, continua. */
+  (function () {
+    var temFS = !!(document.documentElement.requestFullscreen ||
+                   document.documentElement.webkitRequestFullscreen);
+    if (temFS) return;
+    [].forEach.call(document.querySelectorAll('.btn-fs, #lb .lb__fs'), function (b) {
+      b.style.display = 'none';
+    });
+  })();
+
   /* -------------------------------------------------------------- arranque */
   /* O sumário é gerado a partir dos data-titulo, e o i18n troca esses títulos.
      Sem remontar, o sumário fica em português com o deck em inglês. Os nomes dos

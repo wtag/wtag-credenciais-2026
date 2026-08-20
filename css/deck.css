@@ -1444,6 +1444,10 @@ a.reperc__it:hover .reperc__ph{border-color:var(--acento,var(--laranja-wt));
   font-size:19px;letter-spacing:.02em;text-transform:uppercase}
 .gire__cx span{font-family:var(--font-sans),system-ui,sans-serif;font-weight:400;
   font-size:14px;line-height:1.5;color:var(--creme-55,rgba(247,249,234,.55))}
+/* Sem uso por ora. A versão vertical (mobile.html) existe no repositório mas
+   saiu do caminho: a experiência no celular voltou a ser este deck em paisagem,
+   até a vertical estar redonda. Para reativar, devolva o <a class="gire__btn">
+   dentro do #gire no index.html. */
 .gire__btn{margin-top:6px;padding:11px 20px;border-radius:999px;text-decoration:none;
   font-family:var(--font-sans);font-weight:600;font-size:11px;letter-spacing:.12em;
   text-transform:uppercase;color:var(--preto-wt);background:var(--laranja-wt)}
@@ -1456,11 +1460,22 @@ a.reperc__it:hover .reperc__ph{border-color:var(--acento,var(--laranja-wt));
    aparelho de toque a área clicável cresce por pseudo-elemento, sem mudar o
    desenho: o ponto continua com 9px, a área de acerto passa a 34px. */
 @media (pointer:coarse){
-  /* O HUD vive FORA do palco, então aqui 34px são 34px de tela. */
+  /* O HUD vive FORA do palco, então aqui os px são px de tela. 44 é o mínimo
+     recomendado para o dedo; os pontinhos estavam em 34. */
   .dot{position:relative}
   .dot::after{content:"";position:absolute;left:50%;top:50%;
-    transform:translate(-50%,-50%);width:34px;height:34px}
-  #ui .hud{gap:14px}
+    transform:translate(-50%,-50%);width:44px;height:44px}
+  #ui .hud{gap:16px}
+
+  /* Os controles do rodapé e do player desenhavam 16 a 30px de altura: bons para
+     mouse, pequenos para dedo. A área de acerto cresce por pseudo-elemento, sem
+     mudar o desenho de nenhum deles. */
+  .btn-sum,.btn-fs,#lb .lb__close,#lb .lb__fs{position:relative}
+  .btn-sum::after,.btn-fs::after,#lb .lb__close::after,#lb .lb__fs::after{
+    content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:max(100%,44px);height:44px}
+  /* a mira do dedo é grossa: mais respiro entre os dois controles do canto */
+  .hint{gap:18px}
 
   /* Dentro do palco a história é outra: tudo é multiplicado por --escala, que no
      celular em paisagem fica em 0,36. Um alvo de 44px viraria 16px de tela. Por
