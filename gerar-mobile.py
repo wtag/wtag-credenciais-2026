@@ -24,17 +24,29 @@ ORIGEM = os.path.join(AQUI, 'index.html')
 DESTINO = os.path.join(AQUI, 'mobile.html')
 
 
+ENT = [('&nbsp;', ' '), ('&amp;', '&'), ('&quot;', '"'), ('&#39;', "'"),
+       ('&lt;', '<'), ('&gt;', '>')]
+
+
+def entidades(t):
+    """Entidade HTML → caractere. Tem de vir ANTES do esc(), senão o esc()
+    reescapa o & e o texto sai literal na tela."""
+    for a, b in ENT:
+        t = t.replace(a, b)
+    return t
+
+
 def limpo(t):
     t = re.sub(r'<br\s*/?>', ' · ', t or '')
     t = re.sub(r'<[^>]+>', '', t)
-    return re.sub(r'\s+', ' ', t).strip()
+    return entidades(re.sub(r'\s+', ' ', t)).strip()
 
 
 def linhas(t):
     """Quebra em linhas pelo <br>, preservando a intenção de quebra do original."""
     t = re.sub(r'<br\s*/?>', '\n', t or '')
     t = re.sub(r'<[^>]+>', '', t)
-    return [re.sub(r'\s+', ' ', x).strip() for x in t.split('\n') if x.strip()]
+    return [entidades(re.sub(r'\s+', ' ', x)).strip() for x in t.split('\n') if x.strip()]
 
 
 def um(rx, t, g=1, d=''):
@@ -151,21 +163,49 @@ def extrair(html):
         if 'rl-caixa' in lim:
             d['divisor'] = limpo(um(r'class="[^"]*rl-caixa[^"]*"[^>]*>([^<]*)<', lim))
 
-        # ── abertura Grupo WE (slides 1 e 2) ──
-        d['capa_logo'] = img_de(um(r'class="we-capa__logo"[^>]*>(.*?)</div>', lim)) \
-                         or um(r'class="we-capa__logo"[^>]*src="([^"]+)"', lim)
+        # ── capa (slide 1) ──
+        # A classe vem composta ("abs l-marcas we-capa__logo"), então o casamento
+        # tem de ser por substring — exigir class="we-capa__logo" não achava nada,
+        # e a capa saía com o nome interno do slide como título.
+        d['capa'] = {
+            'logo': um(r'class="[^"]*we-capa__logo[^"]*"[^>]*>\s*<img[^>]*src="([^"]+)"', lim),
+            'card': limpo(um(r'class="[^"]*we-capa__card[^"]*"[^>]*>(.*?)</div>', lim)),
+        } if 'we-capa__logo' in lim else None
         d['we_txt'] = linhas(um(r'class="[^"]*we-02__txt[^"]*"[^>]*>(.*?)</div>', lim))
 
-        # ── números do Grupo (slide 3): cada .we-num traz valor e rótulo ──
-        for m in re.finditer(r'<div[^>]*class="[^"]*we-num[^"]*"[^>]*>(.*?)</div>\s*(?=<div|</div>)', lim, re.S):
-            corpo = m.group(1)
-            v = limpo(um(r'class="[^"]*(?:is-forte|blk)[^"]*"[^>]*>(.*?)</\w+>', corpo)) or limpo(corpo)
-            if v:
-                d['numeros'].append({'v': v, 'r': ''})
-        if not d['numeros'] and 'we-num' in lim:
-            brutos = [limpo(x) for x in re.findall(r'class="[^"]*we-num[^"]*"[^>]*>(.*?)</div>', lim, re.S)]
-            d['numeros'] = [{'v': x, 'r': ''} for x in brutos if x]
+        # ── números do Grupo (slide 3) ──
+        # Cada número é um .bloco com um ou mais .we-num (o valor pode vir partido,
+        # como "1,3" + "BI"), e o rótulo vem no .rot seguinte. O valor real está em
+        # data-count-to; o texto no HTML é só o zero de partida da animação.
+        d['numeros'] = []
+        blocos_n = re.findall(r'<div class="bloco l-apoio"[^>]*>(.*?)</div>', lim, re.S)
+        rotulos = [limpo(x) for x in re.findall(r'class="bloco l-apoio rot blk"[^>]*>(.*?)</div>', lim, re.S)]
+        vals = []
+        for bl in blocos_n:
+            pedacos = []
+            for m in re.finditer(r'<span class="we-num"([^>]*)>([^<]*)</span>', bl):
+                alvo = um(r'data-count-to="([\d.,]+)"', m.group(1))
+                dec = um(r'data-count-dec="(\d+)"', m.group(1), d='0')
+                if alvo:
+                    pedacos.append(alvo.replace('.', ',') if dec != '0' else alvo)
+                else:
+                    pedacos.append(limpo(m.group(2)))
+            if pedacos:
+                pre = '+' if '>+<' in bl or limpo(bl) == '+' else ''
+                vals.append(' '.join(pedacos))
+        for i, v in enumerate(vals):
+            d['numeros'].append({'v': v, 'r': rotulos[i] if i < len(rotulos) else ''})
         d['nota'] = limpo(um(r'class="[^"]*we-nota[^"]*"[^>]*>(.*?)</div>', lim))
+
+        # ── rótulos de rodapé (slide 7) e lista de atributos (slide 8) ──
+        d['rodape'] = [limpo(x) for x in re.findall(r'class="rodape-rot"[^>]*>(.*?)</div>', lim, re.S)]
+        d['lista'] = [limpo(x) for x in
+                      re.findall(r'class="[^"]*s09__lista[^"]*".*?$', lim, re.S)[:1]]
+        if 's09__lista' in lim:
+            trecho = lim[lim.index('s09__lista'):]
+            d['lista'] = [limpo(x) for x in re.findall(r'class="blk"[^>]*>([^<]+)<', trecho) if limpo(x)]
+        else:
+            d['lista'] = []
 
         # ── hub de soluções (slide 4) ──
         d['hub'] = [limpo(x) for x in
@@ -228,12 +268,27 @@ def bloco_foto(src):
     return '<div class="sec__bg"><img data-lazy="%s" alt=""></div>' % src
 
 
+# Palavras que o desktop parte em duas linhas de propósito, com recuo. Sem o
+# recuo — que é o que o celular não tem — a quebra lê como erro de digitação.
+COLAR = {('O CON', 'SUMIDOR'): 'O CONSUMIDOR', ('THE CON', 'SUMER'): 'THE CONSUMER'}
+
+
+def juntar_partidas(ls):
+    fora, i = [], 0
+    while i < len(ls):
+        if i + 1 < len(ls) and (ls[i], ls[i + 1]) in COLAR:
+            fora.append(COLAR[(ls[i], ls[i + 1])]); i += 2
+        else:
+            fora.append(ls[i]); i += 1
+    return fora
+
+
 def chamada(d, cls='tit'):
     """As linhas grandes viram um só <h2> com <br>: no celular a quebra tem de
     seguir a largura da tela, não os --x calculados para 1920px."""
     if not d['chamada']: return ''
-    pts = [c['pt'] for c in d['chamada'] if c['pt']]
-    ens = [c['en'] or c['pt'] for c in d['chamada'] if c['pt']]
+    pts = juntar_partidas([c['pt'] for c in d['chamada'] if c['pt']])
+    ens = juntar_partidas([c['en'] or c['pt'] for c in d['chamada'] if c['pt']])
     if not pts: return ''
     en = ' '.join(ens) if len(' '.join(ens)) < 46 else '<br>'.join(ens)
     return '<h2 class="%s" data-en-txt="%s">%s</h2>' % (cls, esc(en), '<br>'.join(map(esc, pts)))
@@ -324,6 +379,18 @@ def emitir(dados):
             o.append('</section>')
             continue
 
+        # ── capa ───────────────────────────────────────────────────────────
+        if d.get('capa'):
+            o.append(sec_abre(d))
+            o.append(bloco_foto(d['foto']))
+            if d['capa']['logo']:
+                o.append('<img style="width:min(62%%,300px);height:auto" '
+                         'data-lazy="%s" alt="Grupo WE">' % d['capa']['logo'])
+            if d['capa']['card']:
+                o.append('<div class="rot">%s</div>' % esc(d['capa']['card']))
+            o.append('</section>')
+            continue
+
         # ── genérico: kicker, chamada, apoio, e o payload do slide ─────────
         auto = bool(d['etapas'] or d['pessoas'] or d['logos'] or d.get('persona'))
         o.append(sec_abre(d, auto=auto))
@@ -341,9 +408,21 @@ def emitir(dados):
             o.append('<h2 class="tit">%s</h2>' % '<br>'.join(map(esc, d['hub'])))
         else:
             o.append('<h2 class="tit tit--p">%s</h2>' % esc(t))
-        if d['apoio']: o.append('<p class="txt">%s</p>' % esc(d['apoio']))
+        # Com números na tela o apoio É o rótulo do primeiro deles, então
+        # imprimir os dois mostrava a mesma frase duas vezes.
+        if d['apoio'] and not d['numeros']:
+            o.append('<p class="txt">%s</p>' % esc(d['apoio']))
         if d.get('nota'): o.append('<div class="rot">%s</div>' % esc(d['nota']))
 
+        if d.get('rodape'):
+            o.append('<div class="reperc">%s</div>'
+                     % ''.join('<span class="veiculo" style="padding:8px 14px;font-size:11px;'
+                               'letter-spacing:.1em;text-transform:uppercase">%s</span>' % esc(x)
+                               for x in d['rodape'] if x))
+        if d.get('lista'):
+            o.append('<div class="reperc">%s</div>'
+                     % ''.join('<span class="premio"><em style="max-width:none">%s</em></span>' % esc(x)
+                               for x in d['lista'] if x))
         if d['numeros']:
             o.append('<div class="nums">')
             for nn in d['numeros']:
