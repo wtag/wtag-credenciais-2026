@@ -1183,7 +1183,6 @@
      título passa pelo elemento — por isso a remontagem lê tudo de novo do DOM. */
   montarUI();
   montarSumario();
-  montarImagens(inicial >= 0 ? inicial : 0);
 
   var inicial = 0;
   var m = /#slide-(\d+)/.exec(location.hash);
@@ -1199,6 +1198,11 @@
   function arrancar() {
     loader.classList.add('is-done');
     atual = inicial;
+    /* Link profundo (#slide-N) não passa por irPara, que é quem monta as imagens
+       da janela — então abrir um link direto para um slide deixava as imagens
+       DELE sem src, e o alt aparecia no lugar da foto. Só apareceu quando fui
+       renderizar os slides um a um em headless. */
+    montarImagens(inicial);
     slides[inicial].classList.add('is-active');
     trocarFundo(slides[inicial], false);
     atualizarUI();
