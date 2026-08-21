@@ -406,6 +406,37 @@ window.DIC_EN = {
 'Matéria em Grandes Nomes da Propaganda': 'Article on Grandes Nomes da Propaganda',
 'Matéria em Propmark': 'Article on Propmark',
 'Esta campanha não recebeu prêmios nem publicações na imprensa.': 'This campaign received no awards or press coverage.',
-'Vamos construir juntos': 'Let\u2019s build together'
+'Vamos construir juntos': 'Let\u2019s build together',
+
+/* ── capa · tela de abertura e instruções de navegação ────────────────────── */
+'Abertura': 'Opening',
+'Capa · WT.AG': 'Cover · WT.AG',
+'Como navegar': 'How to navigate',
+'No computador': 'On a computer',
+'No celular': 'On a phone',
+'Avançar e voltar': 'Forward and back',
+'Direita avança, esquerda volta': 'Right goes forward, left goes back',
+'Abrir o sumário': 'Open the contents',
+'Ir direto para uma tela': 'Jump straight to a screen',
+'Para os lados, como quiser': 'Sideways, either direction',
+'Na foto ou no vídeo, abre em tela cheia': 'On a photo or video, opens full screen',
+'Deite o aparelho: a apresentação é horizontal':
+  'Turn the phone sideways \u2014 this deck is landscape',
+'Estas instruções ficam guardadas no <strong>?</strong> do rodapé':
+  'These instructions stay in the <strong>?</strong> at the bottom',
+/* teclas: aparecem dentro de <kbd>, cada uma no seu elemento */
+'clique': 'click',
+'espaço': 'space',
+'toque': 'tap',
+'deslize': 'swipe',
+
+/* ── rodapé e sumário · lacunas que estavam sem tradução ──────────────────── */
+'Credenciais WT.AG · 2026 · abertura e cinco atos, 26 telas':
+  'WT.AG Credentials · 2026 · opening and five acts, 26 screens',
+'Fechar': 'Close',
+'Tela cheia': 'Full screen',
+'Tela cheia (F)': 'Full screen (F)',
+'Sumário (barra de espaço)': 'Contents (space bar)'
+
 
 };

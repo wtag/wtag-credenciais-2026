@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WT.AG — Credenciais 2026</title>
 <meta name="description" content="Credenciais WT.AG 2026 — Social First Agency. Apresentação de slides.">
-<link rel="stylesheet" href="css/deck.css?v=130">
+<link rel="stylesheet" href="css/deck.css?v=134">
 </head>
 <body>
 
@@ -16,6 +16,46 @@
 <!-- ══════════════════════════════════════════════════════════════════════════
      ATO 1 · GRUPO WE
      ══════════════════════════════════════════════════════════════════════ -->
+
+<!-- 00 ─ Capa WT.AG · logotipo com a roleta + instruções de navegação ─────────
+     A roleta é a mesma do slide "Abertura WT.AG": "WT." fixo e as palavras
+     depois dele trocando com o giro. A diferença é que aqui ela roda UMA vez e
+     assenta no logotipo oficial (data-wordmark-uma-vez), em vez de reiniciar em
+     loop — esta é uma tela de leitura, e algo girando ao lado de um texto de
+     instruções disputa a atenção com ele.
+
+     A caixa de instruções vive AQUI, e não num arquivo à parte, porque é a
+     mesma marcação que o botão "?" do rodapé clona para o painel de consulta:
+     duas cópias do mesmo texto divergiriam na primeira alteração. -->
+<section class="slide capa" data-ato="abertura" data-tom="escuro" data-fundo="#000000" data-titulo="Capa · WT.AG" data-wordmark-uma-vez="1">
+  <div class="capa__tag" data-enter="fade" data-delay="80">Credenciais</div>
+  <div class="capa__word" aria-label="WT.AG"><span class="capa__wt">WT.</span><span class="capa__var"></span></div>
+  <div class="capa__logo" role="img" aria-label="WT.AG">
+    <img class="lgc" style="--d:0ms"   src="assets/logo/wtag-branco-g1.svg" alt="">
+    <img class="lgc" style="--d:110ms" src="assets/logo/wtag-branco-g2.svg" alt="">
+    <img class="lgc" style="--d:220ms" src="assets/logo/wtag-branco-g3.svg" alt="">
+  </div>
+
+  <div class="capa__nav" data-enter="up" data-delay="620">
+    <h2 class="nav__t">Como navegar</h2>
+    <div class="nav__bloco">
+      <div class="nav__lab">No computador</div>
+      <div class="nav__linha"><span class="nav__k"><kbd>&#8594;</kbd><kbd>&#8592;</kbd></span><span class="nav__d">Avançar e voltar</span></div>
+      <div class="nav__linha"><span class="nav__k"><kbd>clique</kbd></span><span class="nav__d">Direita avança, esquerda volta</span></div>
+      <div class="nav__linha"><span class="nav__k"><kbd>espaço</kbd></span><span class="nav__d">Abrir o sumário</span></div>
+      <div class="nav__linha"><span class="nav__k"><kbd>F</kbd></span><span class="nav__d">Tela cheia</span></div>
+      <div class="nav__linha"><span class="nav__k"><kbd>1</kbd>&#8230;<kbd>26</kbd></span><span class="nav__d">Ir direto para uma tela</span></div>
+    </div>
+    <div class="nav__bloco">
+      <div class="nav__lab">No celular</div>
+      <div class="nav__linha"><span class="nav__k"><kbd>toque</kbd></span><span class="nav__d">Direita avança, esquerda volta</span></div>
+      <div class="nav__linha"><span class="nav__k"><kbd>deslize</kbd></span><span class="nav__d">Para os lados, como quiser</span></div>
+      <div class="nav__linha"><span class="nav__k"><kbd>toque</kbd></span><span class="nav__d">Na foto ou no vídeo, abre em tela cheia</span></div>
+      <div class="nav__linha nav__linha--nota"><span class="nav__k"></span><span class="nav__d">Deite o aparelho: a apresentação é horizontal</span></div>
+    </div>
+    <p class="nav__pe">Estas instruções ficam guardadas no <strong>?</strong> do rodapé</p>
+  </div>
+</section>
 
 <!-- 01 ─ Capa Grupo WE -->
 <section class="slide" data-ato="we" data-tom="claro" data-fundo="#FFFFFF" data-titulo="Capa · Grupo WE">
@@ -1232,7 +1272,7 @@
            primeiro hover, e um slide que ninguém encostou não gasta banda.
            O deck.js atribui o src e dá play/pause. -->
       <video class="sede__vid" data-src="assets/video/sede-sao-paulo.mp4" data-t="47.5"
-             muted loop playsinline preload="auto"></video>
+             muted loop playsinline preload="none"></video>
       <span class="sede__grad"></span>
       <span class="sede__leg"><em>São Paulo</em><b>São Paulo</b><i>Rua Quatá, 909 · Vila Olímpia</i></span>
       <span class="sede__tag">Clique para abrir o vídeo</span>
@@ -1245,7 +1285,7 @@
            primeiro hover, e um slide que ninguém encostou não gasta banda.
            O deck.js atribui o src e dá play/pause. -->
       <video class="sede__vid" data-src="assets/video/sede-novo-hamburgo.mp4" data-t="9.4"
-             muted loop playsinline preload="auto"></video>
+             muted loop playsinline preload="none"></video>
       <span class="sede__grad"></span>
       <span class="sede__leg"><em>Rio Grande do Sul</em><b>Novo Hamburgo</b><i>Rua Gen. Daltro Filho, 856 · Hamburgo Velho</i></span>
       <span class="sede__tag">Clique para abrir o vídeo</span>
@@ -1286,6 +1326,7 @@
   </div>
   <div class="hint">
     <button class="btn-sum" type="button" title="Sumário (barra de espaço)">Sumário <kbd>espaço</kbd></button>
+    <button class="btn-ajuda" type="button" title="Como navegar" aria-label="Como navegar">?</button>
     <button class="btn-fs" type="button" title="Tela cheia (F)" aria-label="Tela cheia">
       <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
     </button>
@@ -1295,13 +1336,24 @@
 <!-- ─────────────────────────────────────────────────────── sumário -->
 <div id="sumario">
   <h2 class="sum__t">Sumário</h2>
-  <p class="sum__sub">Credenciais WT.AG · 2026 · cinco atos, 26 telas</p>
+  <p class="sum__sub">Credenciais WT.AG · 2026 · abertura e cinco atos, 26 telas</p>
   <div class="sum__cols"></div>
   <div class="sum__foot">
     <span><kbd>↑</kbd> <kbd>↓</kbd> navegar</span>
     <span><kbd>Enter</kbd> ir para a tela</span>
     <span><kbd>Esc</kbd> fechar</span>
     <button class="sum__fechar" type="button">Fechar</button>
+  </div>
+</div>
+
+<!-- ───────────────────────────────── como navegar (consulta pelo ? do rodapé)
+     O corpo é clonado da .capa__nav na abertura, sempre. Clonar na abertura e
+     não uma vez só é o que mantém o painel no idioma corrente depois de trocar
+     PT/EN — um clone guardado ficaria congelado no idioma da primeira consulta. -->
+<div id="ajuda">
+  <div class="ajuda__cx">
+    <div class="ajuda__corpo"></div>
+    <button class="ajuda__fechar" type="button">Fechar</button>
   </div>
 </div>
 
@@ -1363,8 +1415,8 @@
 
 </div><!-- /#viewport -->
 
-<script src="js/deck.js?v=130"></script>
-<script src="js/i18n-dic.js?v=130"></script>
-<script src="js/i18n.js?v=130"></script>
+<script src="js/deck.js?v=134"></script>
+<script src="js/i18n-dic.js?v=134"></script>
+<script src="js/i18n.js?v=134"></script>
 </body>
 </html>

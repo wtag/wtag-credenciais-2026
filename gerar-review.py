@@ -77,6 +77,34 @@ def conferir_cases(html):
               % ', '.join(sem_rodape))
 
 
+def conferir_contagem(html):
+    """Confere se os números escritos à mão batem com os slides que existem.
+
+    Existe porque já derivaram: o subtítulo do sumário dizia "26 telas" quando
+    havia 25 visíveis — o número tinha sido escrito contando as <section>, e
+    quando um slide ganhou data-oculto ninguém voltou para corrigir. Some a isso
+    o "1…N" das instruções de navegação, que promete um atalho de teclado para
+    cada tela. Os dois passam a ser conferidos contra a contagem real.
+    """
+    visiveis = len([t for t in re.findall(r'<section [^>]*class="slide[^>]*>', html)
+                    if 'data-oculto' not in t])
+    alertas = []
+    m = re.search(r'atos, (\d+) telas', html)
+    if m and int(m.group(1)) != visiveis:
+        alertas.append('subtítulo do sumário diz %s telas, existem %d'
+                       % (m.group(1), visiveis))
+    m = re.search(r'<kbd>1</kbd>&#8230;<kbd>(\d+)</kbd>', html)
+    if m and int(m.group(1)) != visiveis:
+        alertas.append('instruções prometem atalho até %s, existem %d telas'
+                       % (m.group(1), visiveis))
+    if alertas:
+        print('\n  !! CONTAGEM DE SLIDES')
+        for a in alertas:
+            print('     %s' % a)
+    else:
+        print('  contagem: %d telas visíveis, e é isso que os textos dizem' % visiveis)
+
+
 def main():
     if not os.path.exists(ORIGEM):
         sys.exit('não achei o index.html em %s' % AQUI)
@@ -125,6 +153,7 @@ def main():
     html = html.replace('<!DOCTYPE html>', '<!DOCTYPE html>\n' + AVISO, 1)
 
     conferir_cases(html)
+    conferir_contagem(html)
 
     io.open(DESTINO, 'w', encoding='utf-8').write(html)
 

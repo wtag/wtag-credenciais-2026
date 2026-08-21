@@ -25,6 +25,7 @@
   /* Nomes dos atos. Vivem aqui e não no DOM, então o i18n não os alcança
      percorrendo elementos — a tradução é consultada na hora de escrever. */
   var ATOS = {
+    abertura:  'Abertura',
     we:        'Grupo WE',
     trans:     'Transição',
     wtag:      'WT.AG',
@@ -305,8 +306,13 @@
 
   function iniciarLoopWordmark(slide) {
     pararLoopWordmark(slide);
-    var vario = slide.querySelector('.s06__var');
+    var vario = slide.querySelector('.s06__var, .capa__var');
     if (!vario) return;
+    /* Na capa a sequência roda UMA vez e para no logotipo. É a mesma roleta —
+       mesmas palavras, mesmo giro, mesma cascata das três faixas do vetor — só
+       não reinicia: a capa é tela de leitura, e um loop ao lado do texto de
+       instruções briga com ele pela atenção. */
+    var umaVez = !!slide.dataset.wordmarkUmaVez;
     var vivo = { ok: true, timers: [] };
     slide._wordmark = vivo;
 
@@ -327,6 +333,7 @@
           // pequeno "WT.AG" nunca aparece aqui.
           espera(300, function () {
             slide.classList.add('mostra-logo');
+            if (umaVez) return;                        // assenta e fica
             espera(2500, function () {
               // limpa a palavra ENQUANTO ainda está escondida: sem isso o
               // "WT.INFLUENCER" pisca de volta na saída do logotipo
@@ -375,7 +382,7 @@
     });
 
     // slide 06 — loop do wordmark (roleta nas palavras + entrada do logotipo)
-    if (slide.dataset.wordmarkLoop) iniciarLoopWordmark(slide);
+    if (slide.dataset.wordmarkLoop || slide.dataset.wordmarkUmaVez) iniciarLoopWordmark(slide);
 
     // TODOS os textos principais entram com a roleta do showreel
     [].forEach.call(slide.querySelectorAll(ALVOS_RL), function (el) {
@@ -992,9 +999,22 @@
     }
 
     // qualquer overlay/UI aberto não navega
-    if (e.target.closest('#ui, #sumario, #lb, #txtpanel, a, [data-nonav]')) return;
+    if (e.target.closest('#ui, #sumario, #lb, #txtpanel, #ajuda, a, [data-nonav]')) return;
 
-    // clique em área livre: terço esquerdo volta, resto avança
+    /* Toque/clique em área livre navega. Duas diferenças no aparelho de toque:
+
+       1. A referência é a JANELA, não o palco. Em paisagem o palco é letterbox
+          (693 de 740, por exemplo) e as barras negras das laterais engoliam o
+          toque sem fazer nada — parecia que tocar não funcionava.
+       2. A divisão é 40/60 em vez de 26/74. No mouse o alvo é preciso e faz
+          sentido privilegiar o avanço; no dedo, "lado esquerdo volta, lado
+          direito avança" precisa de metades reconhecíveis. Mantive 60 para o
+          avanço porque é a ação usada 24 vezes contra poucas de volta. */
+    var toque = window.matchMedia('(pointer:coarse)').matches;
+    if (toque) {
+      ((e.clientX / window.innerWidth) < 0.40) ? anterior() : proximo();
+      return;
+    }
     var r = stage.getBoundingClientRect();
     if (e.clientX < r.left || e.clientX > r.right) return;
     ((e.clientX - r.left) / r.width < 0.26) ? anterior() : proximo();
@@ -1024,6 +1044,10 @@
       if (k === 'Escape') { e.preventDefault(); fecharLightbox(); }
       if (k === 'f' || k === 'F') { e.preventDefault(); lb.querySelector('.lb__fs').click(); }
       if (k === ' ') { e.preventDefault(); lbVideo.paused ? lbVideo.play() : lbVideo.pause(); }
+      return;
+    }
+    if (ajuda && ajuda.classList.contains('is-abre')) {
+      if (k === 'Escape' || k === '?') { e.preventDefault(); fecharAjuda(); }
       return;
     }
     if (txtpanel.classList.contains('is-open')) {
@@ -1088,22 +1112,50 @@
     var slide   = sede.closest('.slide');
     var pronto  = false;
 
+    /* O seek só é dado por resolvido quando o currentTime REALMENTE chegou lá.
+       Antes, quem marcava `pronto` era o primeiro dos três eventos a disparar,
+       e se aquele seek não pegasse — é comum no loadedmetadata, que tem os
+       metadados mas não os dados do segundo 47,5 — não havia segunda tentativa
+       e o vídeo abria no plano de fachada vazio, que é exatamente o que o data-t
+       existe para evitar. Agora os eventos tentam até acertar. */
     function irAoInicio() {
-      if (Math.abs(v.currentTime - tInicio) < 0.6) return;
+      if (Math.abs(v.currentTime - tInicio) < 0.6) { pronto = true; return; }
       try { v.currentTime = tInicio; } catch (e) {}
     }
 
+    /* Os listeners são anexados UMA vez, aqui, e não dentro do tocar(). Ficavam
+       lá dentro porque o src só era atribuído na primeira entrada e o ramo
+       rodava uma vez só; quando o parar() passou a soltar o src para devolver
+       memória, o ramo voltou a rodar em toda entrada e os listeners passaram a
+       acumular — três por visita, para sempre. */
+    ['loadedmetadata', 'loadeddata', 'canplay', 'seeked'].forEach(function (ev) {
+      v.addEventListener(ev, function () { if (!pronto) irAoInicio(); });
+    });
+
+    /* No aparelho de toque estes dois vídeos NÃO tocam. Três razões que se
+       somam: (a) o efeito desenhado é rodar em preto e branco e colorir no
+       hover, e hover não existe no toque, então o vídeo rodando não entrega
+       nada ali; (b) são dois decodificadores 720×1280 simultâneos, o pico mais
+       caro de todo o deck num iPhone; (c) o toque no cartão já abre o vídeo no
+       player, que é o gesto que a pessoa espera. Fica o pôster, que é um quadro
+       tirado do próprio vídeo. */
+    function semAutoplay() { return window.matchMedia('(pointer:coarse)').matches; }
+
     function tocar() {
-      if (!v.src) {
-        v.src = v.dataset.src;
-        ['loadedmetadata', 'loadeddata', 'canplay'].forEach(function (ev) {
-          v.addEventListener(ev, function () { if (!pronto) { irAoInicio(); pronto = true; } });
-        });
-      }
+      if (semAutoplay()) return;
+      if (!v.getAttribute('src')) v.setAttribute('src', v.dataset.src);
       var pr = v.play();
       if (pr && pr.catch) pr.catch(function () {});   // autoplay barrado: fica no quadro
     }
-    function parar() { v.pause(); }
+
+    /* Pausar não devolve memória: o buffer decodificado continua alocado, e
+       depois de passar pelas sedes uma vez os dois ficavam ocupando espaço pelo
+       resto da sessão. Soltar o src é o que libera. O pronto volta a false para
+       o seek do data-t ser reaplicado na próxima entrada. */
+    function parar() {
+      v.pause();
+      if (v.getAttribute('src')) { v.removeAttribute('src'); v.load(); pronto = false; }
+    }
 
     // segue a entrada e a saída do slide pela classe is-active
     new MutationObserver(function () {
@@ -1139,6 +1191,35 @@
   document.querySelector('.btn-fs').addEventListener('click', function (e) { e.stopPropagation(); alternarTelaCheia(); });
   document.querySelector('.btn-sum').addEventListener('click', function (e) { e.stopPropagation(); abrirSumario(); });
   sumario.querySelector('.sum__fechar').addEventListener('click', function (e) { e.stopPropagation(); fecharSumario(); });
+
+  /* ------------------------------------------------- como navegar (painel "?")
+     As instruções moram na capa. Este painel CLONA a .capa__nav a cada abertura
+     em vez de guardar uma cópia: guardada, ela congelaria no idioma da primeira
+     consulta e passaria a mostrar português com o deck em inglês — o mesmo erro
+     que o sumário já cometeu uma vez por causa de um clone antigo. */
+  var ajuda = document.getElementById('ajuda');
+  function abrirAjuda() {
+    if (!ajuda) return;
+    var fonte = document.querySelector('.capa__nav');
+    var corpo = ajuda.querySelector('.ajuda__corpo');
+    if (fonte && corpo) corpo.innerHTML = fonte.innerHTML;
+    ajuda.classList.add('is-abre');
+  }
+  function fecharAjuda() { if (ajuda) ajuda.classList.remove('is-abre'); }
+
+  var btnAjuda = document.querySelector('.btn-ajuda');
+  if (btnAjuda) btnAjuda.addEventListener('click', function (e) {
+    e.stopPropagation(); ajuda && ajuda.classList.contains('is-abre') ? fecharAjuda() : abrirAjuda();
+  });
+  if (ajuda) {
+    ajuda.querySelector('.ajuda__fechar').addEventListener('click', function (e) {
+      e.stopPropagation(); fecharAjuda();
+    });
+    // clique no fundo fecha; dentro da caixa, não
+    ajuda.addEventListener('click', function (e) {
+      if (e.target === ajuda) { e.stopPropagation(); fecharAjuda(); }
+    });
+  }
 
   /* ─────────────────────────────────────────────────────────────────────────
      MONTAGEM DE IMAGEM POR JANELA
