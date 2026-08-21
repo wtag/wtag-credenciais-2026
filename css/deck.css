@@ -1699,7 +1699,12 @@ a.reperc__it:hover .reperc__ph{border-color:var(--acento,var(--laranja-wt));
    param. A fita de repercussão continua rodando, porque ela COMUNICA (são os
    veículos e prêmios passando) — as outras só decoram. Numa tela de 693×390
    nenhuma dessas perdas é visível; o recarregamento era. */
-@media (pointer:coarse){
+@media (pointer:coarse), (max-width:900px){
+
+  /* A largura entra como segundo gatilho por seguro. pointer:coarse é o sinal
+     certo e o iPhone o reporta, mas aparelho que se declara errado existe, e
+     numa janela estreita o palco fica tão reduzido que vidro jateado e Ken
+     Burns não aparecem de qualquer jeito. Custa nada e fecha a porta. */
 
   /* 1 · nenhum slide fora da tela é renderizado. Vinte e cinco das vinte e seis
      telas deixam de existir para o layout, a pintura e a composição — e as
