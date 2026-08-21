@@ -1275,6 +1275,25 @@
      deck junto. Eles são montados no próprio hover, em montarEspia(). */
   var LAZY = 'img[data-lazy]:not(.espia img)';
 
+  /* Qual arquivo montar. No celular, quando existe uma variante -m, é ela que
+     entra: 60% da largura, o que dá 36% da memória decodificada. As 31 imagens
+     mais pesadas do deck somam 187,8 MB em tamanho cheio e 67,6 MB reduzidas.
+
+     A variante é declarada por atributo, não deduzida por convenção de nome. Se
+     fosse deduzida, um arquivo sem variante viraria um 404 silencioso e o slide
+     apareceria vazio no celular — e só no celular, o lugar mais difícil de
+     perceber. Sem data-lazy-m, monta o arquivo cheio.
+
+     Isso deixa a foto mais mole numa tela grande de celular. É uma troca
+     assumida: a alternativa é a aba recarregando. */
+  function arquivoDe(img) {
+    if (window.matchMedia('(pointer:coarse)').matches) {
+      var m = img.getAttribute('data-lazy-m');
+      if (m) return m;
+    }
+    return img.getAttribute('data-lazy');
+  }
+
   function naJanela(i) {
     var J = janelaAtual();
     var de = Math.max(0, i - J), ate = Math.min(slides.length - 1, i + J);
@@ -1294,7 +1313,7 @@
     slides.forEach(function (s, k) {
       if (!dentro(k)) return;
       [].forEach.call(s.querySelectorAll(LAZY), function (img) {
-        var alvo = img.getAttribute('data-lazy');
+        var alvo = arquivoDe(img);
         if (img.getAttribute('src') !== alvo) img.setAttribute('src', alvo);
       });
     });

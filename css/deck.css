@@ -223,7 +223,20 @@ html,body{background:var(--letterbox,#000)}
    atmosfera, sem nenhuma variação de tom. A cor vem só da camada #fundo. */
 
 /* ------------------------------------------------------------- entradas */
-[data-enter]{will-change:opacity,transform,clip-path}
+/* will-change SÓ no slide que está na tela. Estava em todo [data-enter], e são
+   235 deles no documento — cada um virava camada composta própria, permanente,
+   pela sessão inteira, dentro de um palco de 1920×1080 escalado. Num iPhone é
+   isso que mata o processo do Safari: não é bitmap de imagem (o pico é 22 MB),
+   é o número de camadas. O deck vinha funcionando no limite, e três camadas
+   novas de backdrop-filter que eu adicionei junto com a capa foram o empurrão.
+
+   Restringir ao slide ativo deixa 10 a 20 camadas em vez de 235, e é onde o
+   will-change de fato serve para alguma coisa: ele é uma dica para a animação
+   que está ACONTECENDO. Anunciar uma animação que talvez nunca aconteça é o
+   modo de errar com essa propriedade. */
+.slide.is-active [data-enter],
+.slide.is-entering [data-enter],
+.slide.is-leaving [data-enter]{will-change:opacity,transform,clip-path}
 [data-enter="fade"]{opacity:0}
 .is-played [data-enter="fade"]{opacity:1;transition:opacity 260ms linear var(--d,0ms)}
 
@@ -1673,3 +1686,50 @@ a.reperc__it:hover .reperc__ph{border-color:var(--acento,var(--laranja-wt));
 .slide:not(.is-active) .degrade__blob,
 .slide:not(.is-active) .reperc__fita,
 .slide:not(.is-active) .reperc--rotativo .reperc__it{animation-play-state:paused}
+
+
+/* ══════════════════════════════════════ enxugar camadas no aparelho de toque
+   O palco é um elemento de 1920×1080 movido por transform:scale. Cada
+   descendente que força camada composta própria ganha backing store dentro
+   dessa área, e no iPhone (devicePixelRatio 3) a conta cresce rápido. Aqui, no
+   celular, some tudo que cria camada e não se vê a 0,36 de escala.
+
+   O que se perde, dito com clareza: o vidro jateado vira cor chapada, os
+   desfoques decorativos saem, e o Ken Burns das fotos e a deriva dos degradês
+   param. A fita de repercussão continua rodando, porque ela COMUNICA (são os
+   veículos e prêmios passando) — as outras só decoram. Numa tela de 693×390
+   nenhuma dessas perdas é visível; o recarregamento era. */
+@media (pointer:coarse){
+
+  /* 1 · nenhum slide fora da tela é renderizado. Vinte e cinco das vinte e seis
+     telas deixam de existir para o layout, a pintura e a composição — e as
+     imagens dentro delas nem chegam a decodificar. É a economia maior de
+     todas, e o navegador guarda o estado para reexibir rápido. */
+  .slide:not(.is-active):not(.is-entering):not(.is-leaving){content-visibility:hidden}
+
+  /* 2 · nada de will-change: no celular ele só cria camada, não ganha tempo */
+  .slide.is-active [data-enter],
+  .slide.is-entering [data-enter],
+  .slide.is-leaving [data-enter],
+  #fundo .painel{will-change:auto}
+
+  /* 3 · vidro jateado vira cor chapada (11 regras) */
+  .pilula-nav,.we-capa__card,.we-05__col,.pes__in,.selo__nota,.case__rodape,
+  .reperc--coluna,.reperc--topo,.case__barra,.case__kpis--vert .kpi-cx,.lg,
+  .ajuda__cx{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+  .case__rodape,.reperc--coluna,.reperc--topo,.case__barra,
+  .case__kpis--vert .kpi-cx{background:rgba(22,23,20,.88)}
+  .pilula-nav,.lg{background:rgba(28,29,26,.9)}
+
+  /* 4 · desfoque decorativo sai; grayscale fica, que é assinatura do projeto */
+  .degrade__blob,.degrade__blob--b{display:none}
+  .slide.is-espiando .s15__logo:not(.is-alvo),
+  .slide.is-espiando .escada{filter:none;opacity:.3}
+
+  /* 5 · sombra grande é pintura caríssima e não aparece nesse tamanho */
+  .case__rodape,.reperc--coluna,.reperc--topo,.case__barra,.capa__nav,
+  .ajuda__cx,.pes__in{box-shadow:none}
+
+  /* 6 · movimento decorativo para; a fita de repercussão continua */
+  .px > img,.case__fundo img,.degrade__base{animation:none !important}
+}
