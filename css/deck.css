@@ -1559,10 +1559,13 @@ a.reperc__it:hover .reperc__ph{border-color:var(--acento,var(--laranja-wt));
 .capa__nav{position:absolute;left:1200px;top:266px;width:648px;height:548px;z-index:6;
   box-sizing:border-box;padding:44px 46px;border-radius:24px;
   display:flex;flex-direction:column;justify-content:center;
+  /* Sem backdrop-filter, de propósito. O fundo da capa é #000 puro, e desfocar
+     preto sólido devolve preto sólido — era custo de camada composta no iOS com
+     zero efeito na tela. A cor abaixo é o resultado exato que o vidro produzia
+     ali. Foi uma das três camadas que eu introduzi junto com esta tela e que
+     trouxeram de volta o "um problema ocorreu repetidamente" no Safari. */
   background:rgba(247,249,234,.075);
   border:1px solid rgba(247,249,234,.16);
-  -webkit-backdrop-filter:blur(20px) saturate(1.25);
-  backdrop-filter:blur(20px) saturate(1.25);
   box-shadow:0 20px 64px rgba(0,0,0,.48),inset 0 1px 0 rgba(247,249,234,.14)}
 
 .nav__t{font-family:var(--font-display);text-transform:uppercase;
@@ -1590,18 +1593,19 @@ a.reperc__it:hover .reperc__ph{border-color:var(--acento,var(--laranja-wt));
   letter-spacing:0;padding:0}
 
 /* ── painel de consulta ──────────────────────────────────────────────────── */
+/* Nenhum backdrop-filter aqui. Este elemento tem inset:0 e vive no DOM o tempo
+   todo; um desfoque de viewport inteiro permanente é a alocação mais cara que o
+   deck tinha, e no iPhone ela some junto com a aba. O véu escuro sozinho já
+   separa o painel do fundo. */
 #ajuda{position:absolute;inset:0;z-index:62;display:grid;place-items:center;
-  background:rgba(0,0,0,.72);
-  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  background:rgba(0,0,0,.82);
   opacity:0;visibility:hidden;
   transition:opacity 300ms var(--ease),visibility 0s linear 300ms}
 #ajuda.is-abre{opacity:1;visibility:visible;transition-delay:0s}
 .ajuda__cx{position:relative;width:min(640px,86vw);max-height:86vh;overflow:auto;
   box-sizing:border-box;padding:40px 44px 30px;border-radius:24px;
-  background:rgba(247,249,234,.075);
+  background:rgba(30,31,28,.94);
   border:1px solid rgba(247,249,234,.16);
-  -webkit-backdrop-filter:blur(20px) saturate(1.25);
-  backdrop-filter:blur(20px) saturate(1.25);
   box-shadow:0 24px 80px rgba(0,0,0,.6);
   transform:translateY(14px);transition:transform 300ms var(--ease)}
 #ajuda.is-abre .ajuda__cx{transform:none}
@@ -1651,3 +1655,21 @@ a.reperc__it:hover .reperc__ph{border-color:var(--acento,var(--laranja-wt));
   .nav__k kbd{padding:3px 8px 4px;border-radius:5px}
   .nav__pe{font-size:19px;margin-top:20px}
 }
+
+
+/* ── animação só roda no slide que está na tela ────────────────────────────
+   Onze animações infinitas convivem neste deck: o Ken Burns das fotos, os
+   degradês e a fita de repercussão. Animação em CSS não para porque o elemento
+   está com visibility:hidden — ela continua rodando em todos os 26 slides ao
+   mesmo tempo, e cada elemento animado ganha uma camada composta com backing
+   store própria. Nos cases isso somava fundo + pôster + 3 miniaturas por case.
+   Pausar devolve CPU, GPU e memória de camada, e não muda nada no que se vê:
+   o pedido era a fita rodar em loop SEMPRE QUE ESTIVER NA TELA, e é exatamente
+   o que continua acontecendo. animation-play-state retoma de onde parou, então
+   voltar ao slide não reinicia o movimento. */
+.slide:not(.is-active) .px > img,
+.slide:not(.is-active) .case__fundo img,
+.slide:not(.is-active) .degrade__base,
+.slide:not(.is-active) .degrade__blob,
+.slide:not(.is-active) .reperc__fita,
+.slide:not(.is-active) .reperc--rotativo .reperc__it{animation-play-state:paused}

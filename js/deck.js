@@ -381,6 +381,15 @@
       setTimeout(function () { animarContagem(el); }, atraso);
     });
 
+    /* Vídeo com data-src só ganha o src ao entrar no slide. O showreel aponta
+       para um arquivo de 70,6 MB e tinha src fixo no HTML: mesmo com
+       preload="metadata" isso é um elemento de mídia vivo desde a carga, em
+       toda sessão, mesmo para quem nunca chega no slide 14. As sedes já faziam
+       assim; agora vale para qualquer vídeo do deck. */
+    [].forEach.call(slide.querySelectorAll('video[data-src]:not(.sede__vid)'), function (v) {
+      if (!v.getAttribute('src')) v.setAttribute('src', v.dataset.src);
+    });
+
     // slide 06 — loop do wordmark (roleta nas palavras + entrada do logotipo)
     if (slide.dataset.wordmarkLoop || slide.dataset.wordmarkUmaVez) iniciarLoopWordmark(slide);
 
@@ -418,6 +427,12 @@
       el.textContent = (el.dataset.countPre || '') + '0' + (el.dataset.countPos || '');
     });
     pararLoopWordmark(slide);
+    /* solta o src dos vídeos do slide: pausar não devolve o buffer */
+    [].forEach.call(slide.querySelectorAll('video[data-src]:not(.sede__vid)'), function (v) {
+      if (v.getAttribute('src')) { v.pause(); v.removeAttribute('src'); v.load(); }
+      var pb = v.parentNode && v.parentNode.querySelector('.play-btn');
+      if (pb) pb.classList.remove('is-hidden');
+    });
     [].forEach.call(slide.querySelectorAll(ALVOS_RL), function (el) {
       clearTimeout(el._timerRoleta);
       if (el._cancelaRoleta) el._cancelaRoleta();
@@ -584,6 +599,7 @@
         anterior.classList.remove('is-leaving');
         limparSaida(anterior);
       }
+      soltarImagens(atual);        // só agora, com a transição encerrada
       animando = false;
       if (filaNav) { var f = filaNav; filaNav = null; irPara(f.i, f.dir); }
     }, dur);
@@ -1236,23 +1252,60 @@
      Janela de ±1 e não ±2 de propósito: o slide de case é o mais pesado (fundo
      de 14 MB decodificados + hero de 8,5 + miniaturas), e três deles montados
      já somam perto de 80 MB. Com ±2 daria o dobro. */
-  var JANELA = 1;
+  /* Quantos slides vizinhos ficam montados além do atual.
 
+     No computador vale 1: o vizinho já decodificado faz a próxima tela entrar
+     sem piscar, e 80 MB de bitmap não incomodam ninguém ali.
+
+     No celular vale ZERO. O pico medido com janela 1 é 82,7 MB de bitmap
+     decodificado (janela {1,18,19,20}, três cases seguidos), e é isso que
+     derruba o processo do Safari no iPhone — a mensagem "um problema ocorreu
+     repetidamente" é o WebKit sendo morto por memória, não um erro de página.
+     Com janela zero o pico cai para o slide mais pesado sozinho, 29,9 MB. O
+     preço é a foto entrar um instante depois no primeiro acesso a cada tela;
+     na segunda vez ela já vem do cache do navegador. Cair de pé com um quadro
+     de atraso é melhor que recarregar. */
+  function janelaAtual() {
+    return window.matchMedia('(pointer:coarse)').matches ? 0 : 1;
+  }
+
+  /* :not(.espia img) — os cards de prévia só aparecem no hover de um logo, mas
+     cada um traz fundo de campanha, selo e imagem principal: os quatro somavam
+     ~79 MB decodificados no slide de marcas parceiras, mais que o resto do
+     deck junto. Eles são montados no próprio hover, em montarEspia(). */
+  var LAZY = 'img[data-lazy]:not(.espia img)';
+
+  function naJanela(i) {
+    var J = janelaAtual();
+    var de = Math.max(0, i - J), ate = Math.min(slides.length - 1, i + J);
+    return function (k) { return (k >= de && k <= ate) || k === 0; };
+  }
+
+  /* Montar e soltar são DUAS operações, não uma.
+
+     Eram uma só, e com janela 1 isso funcionava por acidente: o slide que estava
+     saindo continuava dentro da janela do destino, então nunca era desmontado
+     durante a transição. Com janela 0 no celular o acidente acaba — o slide que
+     sai fica 560ms visível no cross-fade e teria perdido o src no primeiro
+     frame, aparecendo vazio. Agora montar acontece na hora e soltar acontece
+     depois que a transição termina. */
   function montarImagens(i) {
-    var de = Math.max(0, i - JANELA), ate = Math.min(slides.length - 1, i + JANELA);
+    var dentro = naJanela(i);
     slides.forEach(function (s, k) {
-      var dentro = (k >= de && k <= ate) || k === 0;
-      /* :not(.espia *) — os cards de prévia só aparecem no hover de um logo, mas
-         cada um traz fundo de campanha, selo e imagem principal: quatro cards
-         somavam ~90 MB decodificados no slide de marcas parceiras, mais que o
-         resto do deck. Eles são montados no próprio hover, em montarEspia(). */
-      [].forEach.call(s.querySelectorAll('img[data-lazy]:not(.espia img)'), function (img) {
+      if (!dentro(k)) return;
+      [].forEach.call(s.querySelectorAll(LAZY), function (img) {
         var alvo = img.getAttribute('data-lazy');
-        if (dentro) {
-          if (img.getAttribute('src') !== alvo) img.setAttribute('src', alvo);
-        } else if (img.hasAttribute('src')) {
-          img.removeAttribute('src');
-        }
+        if (img.getAttribute('src') !== alvo) img.setAttribute('src', alvo);
+      });
+    });
+  }
+
+  function soltarImagens(i) {
+    var dentro = naJanela(i);
+    slides.forEach(function (s, k) {
+      if (dentro(k)) return;
+      [].forEach.call(s.querySelectorAll(LAZY), function (img) {
+        if (img.hasAttribute('src')) img.removeAttribute('src');
       });
     });
   }
